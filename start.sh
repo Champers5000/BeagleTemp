@@ -1,0 +1,1 @@
+sleep 42; python3 /home/debian/logtemps.py &
