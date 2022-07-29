@@ -7,17 +7,20 @@ class tempsensor:
         self.temperature = None
     
     def getTemp(self):
+        print(self.temperature)
         try:
             raw = open(self.path, 'r').read()
             temp = float(raw.split("t=")[-1]) / 1000
             if temp>1:
-                if self.temperature is None:
+                if self.temperature == None:
+                    if temp == 85.0:
+                        raise ValueError
                     print("Sensor " + self.name + " is now readable")
                 self.temperature = temp
             else:
                 raise ValueError
         except (FileNotFoundError, ValueError):
-            if self.temperature is not None:
+            if not self.temperature == None:
                 print("Sensor " + self.name + " is not readable, skipping")
-                self.temperature=None
+            self.temperature=None
         return self.temperature
