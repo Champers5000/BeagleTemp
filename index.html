@@ -1,8 +1,37 @@
-<!doctype html>
-<title>Server Send Events Demo</title>
+<!Doctype html>
+<html>
+  <title>Beagle Bone</title>
 <style>
-  #data {
+  *{
+		font-family: Arial, Verdana, sans-serif;
+    padding: 0px 0px 0px 0px;
+		top: 0px;
+		width: 100%;
+  
+  }
+  h1 {
+    font-size:30px;
     text-align: center;
+    color:blue;
+    font-weight:bolder;
+  }
+  hr {
+    border: 1px dashed #000; 
+    width: 100%;  
+  }
+  table{ 
+    width: 300px;
+  }
+  table tr td {
+    position: relative;
+        top: 5px;
+        left:5px;
+        width:10px;
+    padding: 5px;
+    border: 2px solid black;
+    }
+  #row {
+  background-color: rgb(236, 154, 140); 
   }
 </style>
 <script src="http://code.jquery.com/jquery-latest.js"></script>
@@ -14,4 +43,28 @@ if (!!window.EventSource) {
   }
 }
 </script>
-<div id="data">nothing received yet</div>
+<div id="header"></div>
+  <h1>Beagle</h1>
+  <hr>
+<table id="temp">
+  <tr>
+      <td id="row">Time</td>
+      <td id="row">Temp</td>
+  </tr>
+  <tr>
+      <td>1</td>
+      <td></td>
+  </tr>
+  <tr>
+      <td>2</td>
+      <td></td>
+  </tr>
+  <tr>
+      <td>3</td>
+      <td>34</td>
+  </tr>
+</table>
+
+<div id="graph"></div>
+
+</html>
