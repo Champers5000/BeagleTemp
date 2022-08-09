@@ -5,6 +5,21 @@ from tempsensor import tempsensor
 import ntplib
 import socket
 from threading import Thread
+from flask import Flask, Response, redirect, request, url_for
+app = Flask(__name__)
+
+@app.route("/")
+def getTime():
+    def streamer():
+        while True:
+            yield "<p>{}</p>".format(datetime.now())
+            time.sleep(1)
+
+    return Response(streamer())
+
+if __name__ == "__main__":
+    app.run(host='localhost')
+
 
 
 loginterval = 5 #set the logging interval
@@ -110,6 +125,7 @@ def getTime():
             ntpworking = False
             print("Unable to connect to time server. Check internet connection. Defaulting to system clock")
     timestamp = str(timestamp)
+
 
 
 
