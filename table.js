@@ -1,3 +1,17 @@
+socket = io();
+socket.connect();
+
+socket.on('connect', function(msg){
+  console.log(msg);
+});
+socket.on('message', function(msg){
+  console.log(msg);
+})
+const d =new Date();
+
+document.getElementById("t1").innerText = d.getTime();
+
+/*
 const config = {
     type: "line",
     data: {
@@ -46,4 +60,4 @@ const config = {
     });
   
   fetchCSV(); // First fetch!
-  
+  */

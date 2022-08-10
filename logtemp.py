@@ -5,22 +5,8 @@ from tempsensor import tempsensor
 import ntplib
 import socket
 from threading import Thread
-from flask import Flask, Response, redirect, request, url_for
-app = Flask(__name__)
-
-@app.route("/")
-def getTime():
-    def streamer():
-        while True:
-            yield "<p>{}</p>".format(datetime.now())
-            time.sleep(1)
-
-    return Response(streamer())
-
-if __name__ == "__main__":
-    app.run(host='localhost')
-
-
+from flask import Flask, Response, redirect, request, url_for, render_template
+from flask_socketio import SocketIO
 
 loginterval = 5 #set the logging interval
 logfile = "temperaturelog.csv" #name of log file
@@ -139,10 +125,28 @@ if len(sensorname) == 0:
 
 #check for temperature log and ensure the headers include all sensors
 createCSVHeader()
-
-
-#Main loop to log things
 c = ntplib.NTPClient()
+
+#Setup for web streaming
+app = Flask(__name__)
+socket = SocketIO(app)
+
+
+@app.route("/")
+def index():
+    return render_template('index.html')
+
+@socket.on('message')
+def handlemsg(msg):
+    while True:
+        socket.send("idiot")
+        time.sleep(1)
+
+
+if __name__ == "__main__":
+    socket.run(app)
+
+#Main loop for logging
 try:
     while True:
         #Start thread to get time

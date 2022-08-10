@@ -37,15 +37,7 @@
   background-color: rgb(236, 154, 140); 
   }
 </style>
-<script src="http://code.jquery.com/jquery-latest.js"></script>
-<script>
-if (!!window.EventSource) {
-  var source = new EventSource('/');
-  source.onmessage = function(e) {
-    $("#data").text(e.data);
-  }
-}
-</script>
+
 <div id="header">
    <div class="nav">
     <h1>Beagle</h1>
@@ -61,18 +53,20 @@ if (!!window.EventSource) {
   </tr>
   <tr>
       <td>1</td>
-      <td></td>
+      <td id="t1"></td>
   </tr>
   <tr>
       <td>2</td>
-      <td></td>
+      <td id="t2"></td>
   </tr>
   <tr>
       <td>3</td>
-      <td>34</td>
+      <td id="t3">34</td>
   </tr>
 </table>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.js"></script>
+<script src="table.js">
+</script>
 <div id="graph"></div>
 
 </html>
