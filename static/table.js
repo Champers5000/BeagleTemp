@@ -10,6 +10,11 @@ $( document ).ready(function() {
   socket.on('message', function(msg){
     console.log(msg);
   })
+
+  socket.on('someevent', function(data){
+    print('someevent')
+    console.log(data)
+  })
   const d =new Date();
 
   document.getElementById("t1").innerText = d.getTime();

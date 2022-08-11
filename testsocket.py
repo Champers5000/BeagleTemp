@@ -15,13 +15,6 @@ app.config['SECRET_KEY']='bruh'
 socket = SocketIO(app)
 connected = False
 
-def sendData():
-    global connected
-    for i in range(0,4):
-        time.sleep(1)
-        socket.send("idiot", broadcast = True)
-        print("sent idiot")
-    print("stopped sending")
 
 @app.route("/")
 def index():
@@ -32,16 +25,30 @@ def handlemsg(msg):
     global connected
     connected = True
     print("received "+msg)
-    sendData()
-
 
 @socket.on('disconnect')
-def handlemsg():
+def handledis():
     global connected
     print("disconnected ")
     connected = False
 
+def mainloop():
+    global connected
+    while True:
+        print(connected)
+        time.sleep(1)
+        if connected:
+            for i in range(0,4):
+                time.sleep(1)
+                socket.emit('someevent', {'data' : '42'})
+                socket.send("idiot", broadcast = True)
+                print("sent idiot")
+            print("stopped sending")
+            connected = False
+
+t_main = Thread(target=mainloop)
+t_main.start()
+
+
 if __name__ == "__main__":
     socket.run(app)
-
-
