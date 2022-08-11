@@ -40,8 +40,7 @@ def mainloop():
         if connected:
             for i in range(0,4):
                 time.sleep(1)
-                socket.emit('someevent', {'data' : '42'})
-                socket.send("idiot", broadcast = True)
+                socket.emit('tempreadings', str(i)+','+str(i)+','+str(i)+',' , broadcast = True)
                 print("sent idiot")
             print("stopped sending")
             connected = False

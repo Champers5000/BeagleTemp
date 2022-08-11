@@ -14,6 +14,12 @@ logfile = "temperaturelog.csv" #name of log file
 sensorname = set() #list of existing sensor names just for formatting the csv header
 sensorlist = None
 
+#Setup for web streaming
+app = Flask(__name__)
+app.config['SECRET_KEY']='bruh'
+socket = SocketIO(app)
+connected = False
+
 def hasDuplicates(inputlist):
     tempset = set()
     for i in inputlist:
@@ -94,10 +100,12 @@ def updateCSVHeader():
 
 ntpworking=True
 timestamp = None
+c = ntplib.NTPClient()
 def getTime():
     #get timestamp either from online or system clock
     global timestamp
     global ntpworking
+    global c
     try:
         response = c.request('us.pool.ntp.org', version=3)
         response.offset
@@ -112,47 +120,9 @@ def getTime():
             print("Unable to connect to time server. Check internet connection. Defaulting to system clock")
     timestamp = str(timestamp)
 
-
-
-
-#look for all the available sensors
-checkSensors()
-
-#exit if no sensors are found
-if len(sensorname) == 0:
-    print("No temperature sensors are found. Exiting")
-    exit(1)
-
-#check for temperature log and ensure the headers include all sensors
-createCSVHeader()
-c = ntplib.NTPClient()
-
-#Setup for web streaming
-app = Flask(__name__)
-socket = SocketIO(app)
-
-@app.route("/")
-def index():
-    return render_template('index.html')
-
-@socket.on('message')
-def handlemsg(msg):
-    while True:
-        socket.send("idiot")
-        time.sleep(1)
-
-
-if __name__ == "__main__":
-    socket.run(app)
-
-#Main loop for logging
-try:
-    while True:
-        #Start thread to get time
-        timethread = Thread(target = getTime)
-        timethread.start()
-
-        starttime = int(datetime.now().timestamp())
+def getSensorReading():
+    global sensorname
+    global sensorlist
         # get all the sensor data with seperate threads
         threadlist = [None]*len(sensorlist)
         for i in range(0, len(sensorlist)):
@@ -171,23 +141,74 @@ try:
             if(temp is not None):
                 strout+=str(temp)
             strout+=','
+        return strout
 
-        socket.send(strout)
-        #write out all data
-        try:
-            with open("temperaturelog.csv", 'a') as f:
-                f.write(strout+'\n')
-                f.close()
-        except:
-            print("Unable to write to file. Printing readings to console")
-            print(strout)
+def mainloop():
+    #Main loop for logging
+    try:
+        while True:
+            #Start thread to get time
+            timethread = Thread(target = getTime)
+            timethread.start()
 
-        #Look for new sensors
-        if checkSensors():
-            updateCSVHeader()
-        # wait for time to hit the logging interval to continue
-        while int(datetime.now().timestamp())-starttime < loginterval:
-            time.sleep(.01)
+            starttime = int(datetime.now().timestamp())
+            tempreadings = getSensorReading()
 
-except KeyboardInterrupt:
-    print ("Exiting")
+            if connected:
+                socket.emit('tempreadings', str(i)+','+str(i)+','+str(i)+',' , broadcast = True)
+
+            #write out all data
+            try:
+                with open("temperaturelog.csv", 'a') as f:
+                    f.write(tempreadings+'\n')
+                    f.close()
+            except:
+                print("Unable to write to file. Printing readings to console")
+                print(tempreadings)
+
+            #Look for new sensors
+            if checkSensors():
+                updateCSVHeader()
+            # wait for time to hit the logging interval to continue
+            while int(datetime.now().timestamp())-starttime < loginterval:
+                time.sleep(.5)
+
+    except KeyboardInterrupt:
+        print ("Exiting")
+
+#look for all the available sensors
+checkSensors()
+
+#exit if no sensors are found
+if len(sensorname) == 0:
+    print("No temperature sensors are found. Exiting")
+    exit(1)
+
+#check for temperature log and ensure the headers include all sensors
+createCSVHeader()
+
+t_main = Thread(target = mainloop)
+t_main.start()
+
+
+@app.route("/")
+def index():
+    return render_template('index.html')
+
+@socket.on('message')
+def handlemsg(msg):
+    global connected
+    connected = True
+    print("received "+msg)
+
+@socket.on('disconnect')
+def handledc():
+    global connected
+    print("disconnected ")
+    connected = False
+
+if __name__ == "__main__":
+    socket.run(app)
+
+
+

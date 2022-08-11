@@ -11,13 +11,18 @@ $( document ).ready(function() {
     console.log(msg);
   })
 
-  socket.on('someevent', function(data){
-    print('someevent')
+  socket.on('tempreadings', function(data){
     console.log(data)
-  })
-  const d =new Date();
+    const temparray = data.split(',');
+    var tablehtml = '<tr><td id="row">Sensor</td><td id="row">Temp</td></tr>';
 
-  document.getElementById("t1").innerText = d.getTime();
+    for(i=0; i<temparray.length; i++){
+      if(temparray[i].length >0 ){
+        tablehtml += '<tr><td>'+i+'</td>'+'<td>'+ temparray[i]+'</td></tr>';
+      }
+    }
+    document.getElementById("temp").innerHTML = tablehtml
+  })
 });
 
 
