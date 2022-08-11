@@ -131,7 +131,6 @@ c = ntplib.NTPClient()
 app = Flask(__name__)
 socket = SocketIO(app)
 
-
 @app.route("/")
 def index():
     return render_template('index.html')
@@ -173,6 +172,7 @@ try:
                 strout+=str(temp)
             strout+=','
 
+        socket.send(strout)
         #write out all data
         try:
             with open("temperaturelog.csv", 'a') as f:
