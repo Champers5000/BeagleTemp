@@ -4,7 +4,7 @@ import os
 from tempsensor import tempsensor
 import ntplib
 import socket
-from threading import Thread
+from threading import Thread, Lock
 from flask import Flask, Response, redirect, request, url_for, render_template, send_file
 from flask_socketio import SocketIO
 
@@ -125,7 +125,8 @@ def getSensorReading():
     global sensorname
     global sensorlist
     global tempreading
-        # get all the sensor data with seperate threads
+    '''
+    # get all the sensor data with seperate threads
     threadlist = [None]*len(sensorlist)
     for i in range(0, len(sensorlist)):
         threadlist[i] = Thread(target = sensorlist[i].getTemp)
@@ -133,7 +134,10 @@ def getSensorReading():
 
     for i in range(0, len(threadlist)):
         threadlist[i].join()
-
+    '''
+    for i in range(0, len(sensorlist)):
+        sensorlist[i].getTemp()
+    
     tempreading = ""
 
     for i in range(0, len(sensorlist)):
@@ -143,6 +147,7 @@ def getSensorReading():
         tempreading+=','
 
 def mainloop():
+    global tempreading
     #Main loop for logging
     try:
         while True:

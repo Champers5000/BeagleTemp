@@ -2,3 +2,4 @@ datetime
 ntplib
 flask
 flask-socketio
+simple-websocket
