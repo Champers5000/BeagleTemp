@@ -25,7 +25,7 @@ def downloadcsv():
     return send_file("./temperaturelog.csv")
 
 @socket.on('connect')
-def handlemsg(msg):
+def handleconnect(msg):
     global users
     users.add(request.sid)
     print(users)
@@ -35,7 +35,7 @@ def handlemsg(msg):
     print("received "+msg)
 
 @socket.on('disconnect')
-def handledis():
+def handledc():
     global users
     users.remove(request.sid)
     print(users)

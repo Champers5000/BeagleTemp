@@ -5,10 +5,10 @@ from tempsensor import tempsensor
 import ntplib
 import socket
 from threading import Thread
-from flask import Flask, Response, redirect, request, url_for, render_template
+from flask import Flask, Response, redirect, request, url_for, render_template, send_file
 from flask_socketio import SocketIO
 
-loginterval = 3 #set the logging interval
+loginterval = 60 #set the logging interval
 logfile = "temperaturelog.csv" #name of log file
 
 sensorname = set() #list of existing sensor names just for formatting the csv header
@@ -75,7 +75,7 @@ def createCSVHeader():
         csvheader = f.readline().split(',')
         csvheader = csvheader[2:]
         if(hasDuplicates(csvheader)):
-            print("Check the csv header. There may be duplicate entries, and the file may be corrupt.")
+            print("Check the csv header. There may be duplicate entries, or the file may be corrupt.")
         sensorlist = [None]*(len(csvheader)-1)
         for i in range(0,len(sensorlist)):
             sensorlist[i] = tempsensor(csvheader[i])
@@ -120,26 +120,27 @@ def getTime():
             print("Unable to connect to time server. Check internet connection. Defaulting to system clock")
     timestamp = str(timestamp)
 
+tempreading = ""
 def getSensorReading():
     global sensorname
     global sensorlist
+    global tempreading
         # get all the sensor data with seperate threads
-        threadlist = [None]*len(sensorlist)
-        for i in range(0, len(sensorlist)):
-            threadlist[i] = Thread(target = sensorlist[i].getTemp)
-            threadlist[i].start()
+    threadlist = [None]*len(sensorlist)
+    for i in range(0, len(sensorlist)):
+        threadlist[i] = Thread(target = sensorlist[i].getTemp)
+        threadlist[i].start()
 
-        for i in range(0, len(threadlist)):
-            threadlist[i].join()
+    for i in range(0, len(threadlist)):
+        threadlist[i].join()
 
-        tempreading = ""
+    tempreading = ""
 
-        for i in range(0, len(sensorlist)):
-            temp = sensorlist[i].temperature
-            if(temp is not None):
-                tempreading+=str(temp)
-            tempreading+=','
-        return tempreading
+    for i in range(0, len(sensorlist)):
+        temp = sensorlist[i].temperature
+        if(temp is not None):
+            tempreading+=str(temp)
+        tempreading+=','
 
 def mainloop():
     #Main loop for logging
@@ -150,7 +151,7 @@ def mainloop():
             timethread.start()
 
             starttime = int(datetime.now().timestamp())
-            strout = getSensorReading()
+            strout = tempreading
 
             #Wait for threads to finish and concatenate data
             timethread.join()
@@ -180,10 +181,11 @@ def mainloop():
 checkSensors()
 
 #exit if no sensors are found
+'''
 if len(sensorname) == 0:
     print("No temperature sensors are found. Exiting")
     exit(1)
-
+'''
 #check for temperature log and ensure the headers include all sensors
 createCSVHeader()
 
@@ -193,10 +195,12 @@ t_main.start()
 def serverloop():
     global t_main
     global connections
-    while t_main.is_Alive():
+    while t_main.is_alive():
+        getSensorReading()
+        print(tempreading)
         if len(connections)>0:
-            socket.emit(getsensorReading())
-        time.sleep(1)
+            socket.emit('tempreadings', tempreading, broadcast = True)
+        time.sleep(2)
 
 t_web = Thread(target = serverloop)
 t_web.start()
@@ -204,6 +208,10 @@ t_web.start()
 @app.route("/")
 def index():
     return render_template('index.html')
+
+@app.route("/temperaturelog.csv")
+def downloadcsv():
+    return send_file("./temperaturelog.csv")
 
 @socket.on('connect')
 def handleconnect():

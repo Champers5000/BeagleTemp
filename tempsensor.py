@@ -7,7 +7,6 @@ class tempsensor:
         self.temperature = None
     
     def getTemp(self):
-        print(self.temperature)
         try:
             raw = open(self.path, 'r').read()
             temp = float(raw.split("t=")[-1]) / 1000
