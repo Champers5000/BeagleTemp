@@ -8,7 +8,7 @@ from threading import Thread
 from flask import Flask, Response, redirect, request, url_for, render_template
 from flask_socketio import SocketIO
 
-loginterval = 5 #set the logging interval
+loginterval = 3 #set the logging interval
 logfile = "temperaturelog.csv" #name of log file
 
 sensorname = set() #list of existing sensor names just for formatting the csv header
@@ -16,9 +16,9 @@ sensorlist = None
 
 #Setup for web streaming
 app = Flask(__name__)
-app.config['SECRET_KEY']='bruh'
+app.config['SECRET_KEY']='Tommy boy'
 socket = SocketIO(app)
-connected = False
+connections = set()
 
 def hasDuplicates(inputlist):
     tempset = set()
@@ -108,7 +108,7 @@ def getTime():
     global c
     try:
         response = c.request('us.pool.ntp.org', version=3)
-        response.offset
+        #response.offset
         timestamp = datetime.fromtimestamp(response.tx_time, None) # Passing in None object for timezone parameter defaults to local timezone
         if not ntpworking:
             print("Connected to time server")
@@ -129,19 +129,17 @@ def getSensorReading():
             threadlist[i] = Thread(target = sensorlist[i].getTemp)
             threadlist[i].start()
 
-        #Wait for threads to finish and concatenate data
-        timethread.join()
         for i in range(0, len(threadlist)):
             threadlist[i].join()
 
-        strout = timestamp[:10] +','+ timestamp[11:19] + ','
+        tempreading = ""
 
         for i in range(0, len(sensorlist)):
             temp = sensorlist[i].temperature
             if(temp is not None):
-                strout+=str(temp)
-            strout+=','
-        return strout
+                tempreading+=str(temp)
+            tempreading+=','
+        return tempreading
 
 def mainloop():
     #Main loop for logging
@@ -152,19 +150,20 @@ def mainloop():
             timethread.start()
 
             starttime = int(datetime.now().timestamp())
-            tempreadings = getSensorReading()
+            strout = getSensorReading()
 
-            if connected:
-                socket.emit('tempreadings', str(i)+','+str(i)+','+str(i)+',' , broadcast = True)
+            #Wait for threads to finish and concatenate data
+            timethread.join()
+            strout = timestamp[:10] +','+ timestamp[11:19] + ',' + strout
 
             #write out all data
             try:
                 with open("temperaturelog.csv", 'a') as f:
-                    f.write(tempreadings+'\n')
+                    f.write(strout+'\n')
                     f.close()
             except:
                 print("Unable to write to file. Printing readings to console")
-                print(tempreadings)
+                print(strout)
 
             #Look for new sensors
             if checkSensors():
@@ -175,6 +174,7 @@ def mainloop():
 
     except KeyboardInterrupt:
         print ("Exiting")
+
 
 #look for all the available sensors
 checkSensors()
@@ -190,25 +190,33 @@ createCSVHeader()
 t_main = Thread(target = mainloop)
 t_main.start()
 
+def serverloop():
+    global t_main
+    global connections
+    while t_main.is_Alive():
+        if len(connections)>0:
+            socket.emit(getsensorReading())
+        time.sleep(1)
+
+t_web = Thread(target = serverloop)
+t_web.start()
 
 @app.route("/")
 def index():
     return render_template('index.html')
 
-@socket.on('message')
-def handlemsg(msg):
-    global connected
-    connected = True
-    print("received "+msg)
+@socket.on('connect')
+def handleconnect():
+    global connections
+    connections.add(request.sid)
 
 @socket.on('disconnect')
 def handledc():
-    global connected
-    print("disconnected ")
-    connected = False
+    global connections
+    connections.remove(request.sid)
 
 if __name__ == "__main__":
-    socket.run(app)
+    socket.run(app, host = '0.0.0.0')
 
 
 

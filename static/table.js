@@ -1,10 +1,9 @@
 $( document ).ready(function() {
   socket = io();
-  socket.connect('http://localhost:5000');
+  socket.connect();
 
   socket.on('connect', function(){
-    console.log("Connection");
-    socket.send('a');
+    console.log("Connected");
   })
 
   socket.on('message', function(msg){
@@ -16,10 +15,8 @@ $( document ).ready(function() {
     const temparray = data.split(',');
     var tablehtml = '<tr><td id="row">Sensor</td><td id="row">Temp</td></tr>';
 
-    for(i=0; i<temparray.length; i++){
-      if(temparray[i].length >0 ){
-        tablehtml += '<tr><td>'+i+'</td>'+'<td>'+ temparray[i]+'</td></tr>';
-      }
+    for(i=0; i<temparray.length-1; i++){
+      tablehtml += '<tr><td>'+i+'</td>'+'<td>'+ temparray[i]+'</td></tr>';
     }
     document.getElementById("temp").innerHTML = tablehtml
   })
