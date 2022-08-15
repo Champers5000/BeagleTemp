@@ -1,6 +1,5 @@
 class tempsensor:
     sensordir = "/sys/devices/w1_bus_master1/"
-
     def __init__(self, name):
         self.name = name
         self.path = tempsensor.sensordir+name+"/w1_slave"
@@ -8,7 +7,9 @@ class tempsensor:
     
     def getTemp(self):
         try:
-            raw = open(self.path, 'r').read()
+            with open(self.path, 'r') as f:
+                raw = f.read()
+                f.close()
             temp = float(raw.split("t=")[-1]) / 1000
             if temp>1:
                 if self.temperature == None:

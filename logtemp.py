@@ -8,11 +8,12 @@ from threading import Thread, Lock
 from flask import Flask, Response, redirect, request, url_for, render_template, send_file
 from flask_socketio import SocketIO
 
-loginterval = 60 #set the logging interval
+loginterval = 5 #set the logging interval
 logfile = "temperaturelog.csv" #name of log file
 
 sensorname = set() #list of existing sensor names just for formatting the csv header
 sensorlist = None
+lock = Lock()
 
 #Setup for web streaming
 app = Flask(__name__)
@@ -30,13 +31,16 @@ def hasDuplicates(inputlist):
 def checkSensors():
     #check for new sensors, returns true when new sensors are found
     global sensorname
+    global lock
     newsensor = False
     if os.path.exists(tempsensor.sensordir):
         for filename in os.listdir(tempsensor.sensordir):
+            lock.acquire()
             if filename[:3] == "28-" and not filename in sensorname:
                 print("Found sensor "+ filename)
                 sensorname.add(filename)
                 newsensor=True
+            lock.release()
     else:
         print("Sensor directory not found. Please install the appropriate drivers for the temperature sensor")
         exit(1)
@@ -69,7 +73,6 @@ def createCSVHeader():
                 f.write(name+",")
             f.write("\n")
 
-
     #Get the order of the sensor in the csv and store it into a list
     with open("temperaturelog.csv", 'r') as f:
         csvheader = f.readline().split(',')
@@ -84,6 +87,8 @@ def createCSVHeader():
 def updateCSVHeader():
     global sensorname
     global sensorlist
+    global lock
+    lock.acquire()
     tempsensorname = sensorname.copy() # Make a copy of all the existing sensors. If the sensor exists, then we will delete it from this set
     for sensor in sensorlist:
         tempsensorname.remove(sensor.name)
@@ -97,6 +102,7 @@ def updateCSVHeader():
         f.write('\n')
         f.writelines(lines[1:])
         f.close()
+    lock.release()
 
 ntpworking=True
 timestamp = None
@@ -108,12 +114,11 @@ def getTime():
     global c
     try:
         response = c.request('us.pool.ntp.org', version=3)
-        #response.offset
         timestamp = datetime.fromtimestamp(response.tx_time, None) # Passing in None object for timezone parameter defaults to local timezone
         if not ntpworking:
             print("Connected to time server")
             ntpworking = True
-    except (ntplib.NTPException, socket.gaierror):
+    except (ntplib.NTPException):
         timestamp = datetime.now()
         if ntpworking:
             ntpworking = False
@@ -125,6 +130,7 @@ def getSensorReading():
     global sensorname
     global sensorlist
     global tempreading
+    global lock
     '''
     # get all the sensor data with seperate threads
     threadlist = [None]*len(sensorlist)
@@ -137,17 +143,20 @@ def getSensorReading():
     '''
     for i in range(0, len(sensorlist)):
         sensorlist[i].getTemp()
-    
-    tempreading = ""
 
+    lock.acquire()
+    tempreading = ""
     for i in range(0, len(sensorlist)):
         temp = sensorlist[i].temperature
         if(temp is not None):
             tempreading+=str(temp)
         tempreading+=','
+    lock.release()
+
 
 def mainloop():
     global tempreading
+    global lock
     #Main loop for logging
     try:
         while True:
@@ -156,7 +165,11 @@ def mainloop():
             timethread.start()
 
             starttime = int(datetime.now().timestamp())
+
+            getSensorReading()
+            lock.acquire()
             strout = tempreading
+            lock.release()
 
             #Wait for threads to finish and concatenate data
             timethread.join()
@@ -200,11 +213,14 @@ t_main.start()
 def serverloop():
     global t_main
     global connections
+    global lock
     while t_main.is_alive():
         getSensorReading()
+        lock.acquire()
         print(tempreading)
         if len(connections)>0:
             socket.emit('tempreadings', tempreading, broadcast = True)
+        lock.release()
         time.sleep(2)
 
 t_web = Thread(target = serverloop)
