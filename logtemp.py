@@ -104,6 +104,16 @@ def updateCSVHeader():
         f.close()
     lock.release()
 
+def emitHeader():
+    global sensorlist
+    global lock
+    lock.acquire()
+    output = [None]*len(sensorlist)
+    for i in range (0,len(sensorlist)):
+        output[i] = sensorlist[i].name
+    socket.emit('headerchange', str(output), broadcast = True)
+    lock.release()
+
 ntpworking=True
 timestamp = None
 c = ntplib.NTPClient()
@@ -118,7 +128,7 @@ def getTime():
         if not ntpworking:
             print("Connected to time server")
             ntpworking = True
-    except (ntplib.NTPException):
+    except (ntplib.NTPException, OSError):
         timestamp = datetime.now()
         if ntpworking:
             ntpworking = False
@@ -153,7 +163,6 @@ def getSensorReading():
         tempreading+=','
     lock.release()
 
-
 def mainloop():
     global tempreading
     global lock
@@ -187,6 +196,8 @@ def mainloop():
             #Look for new sensors
             if checkSensors():
                 updateCSVHeader()
+                emitHeader()
+
             # wait for time to hit the logging interval to continue
             while int(datetime.now().timestamp())-starttime < loginterval:
                 time.sleep(.5)
@@ -238,6 +249,7 @@ def downloadcsv():
 def handleconnect():
     global connections
     connections.add(request.sid)
+    emitHeader()
 
 @socket.on('disconnect')
 def handledc():
