@@ -31,7 +31,6 @@ $(document).ready(function () {
 
     async function drawChart() {
         const datapoints = await getData();
-        console.log(datapoints);
         //using the array, generate a list of datasets
         const plotdataset = new Array(datapoints.length - 1);
         for (let i = 0; i < plotdataset.length; i++) {

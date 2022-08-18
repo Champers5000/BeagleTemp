@@ -8,7 +8,7 @@ from threading import Thread, Lock
 from flask import Flask, Response, redirect, request, url_for, render_template, send_file
 from flask_socketio import SocketIO
 
-loginterval = 5 #set the logging interval
+loginterval = 60 #set the logging interval
 logfile = "temperaturelog.csv" #name of log file
 
 sensorname = set() #list of existing sensor names just for formatting the csv header
@@ -163,7 +163,7 @@ def getSensorReading():
         tempreading+=','
     lock.release()
 
-logging = False
+logging = True
 def mainloop():
     global tempreading
     global logging
