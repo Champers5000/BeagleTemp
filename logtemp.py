@@ -43,7 +43,7 @@ def checkSensors():
             lock.release()
     else:
         print("Sensor directory not found. Please install the appropriate drivers for the temperature sensor")
-        exit(1)
+        #exit(1)
     return newsensor
 
 
@@ -163,8 +163,10 @@ def getSensorReading():
         tempreading+=','
     lock.release()
 
+logging = False
 def mainloop():
     global tempreading
+    global logging
     global lock
     #Main loop for logging
     try:
@@ -174,24 +176,25 @@ def mainloop():
             timethread.start()
 
             starttime = int(datetime.now().timestamp())
+            if logging:
 
-            getSensorReading()
-            lock.acquire()
-            strout = tempreading
-            lock.release()
+                getSensorReading()
+                lock.acquire()
+                strout = tempreading
+                lock.release()
 
-            #Wait for threads to finish and concatenate data
-            timethread.join()
-            strout = timestamp[:10] +','+ timestamp[11:19] + ',' + strout
+                #Wait for threads to finish and concatenate data
+                timethread.join()
+                strout = timestamp[:10] +','+ timestamp[11:19] + ',' + strout
 
-            #write out all data
-            try:
-                with open("temperaturelog.csv", 'a') as f:
-                    f.write(strout+'\n')
-                    f.close()
-            except:
-                print("Unable to write to file. Printing readings to console")
-                print(strout)
+                #write out all data
+                try:
+                    with open("temperaturelog.csv", 'a') as f:
+                        f.write(strout+'\n')
+                        f.close()
+                except:
+                    print("Unable to write to file. Printing readings to console")
+                    print(strout)
 
             #Look for new sensors
             if checkSensors():
@@ -247,17 +250,26 @@ def downloadcsv():
 
 @socket.on('connect')
 def handleconnect():
+    global logging
     global connections
     connections.add(request.sid)
     emitHeader()
+    socket.emit('logstate', logging)
+
 
 @socket.on('disconnect')
 def handledc():
     global connections
     connections.remove(request.sid)
 
+@socket.on('toggle')
+def toggle():
+    global logging
+    global lock
+    lock.acquire()
+    logging = not logging
+    socket.emit('logstate', logging, broadcast = True)
+    lock.release()
+
 if __name__ == "__main__":
     socket.run(app, host = '0.0.0.0')
-
-
-
