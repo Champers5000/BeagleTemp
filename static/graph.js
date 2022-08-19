@@ -38,8 +38,8 @@ $(document).ready(function () {
                 label: datapoints[i + 1][0],
                 data: datapoints[i + 1].slice(1),
                 borderColor: linecolors[i],
-                pointRadius: 0,
-                pointHoverRadius: 0,
+                pointRadius: 1,
+                pointHoverRadius: 1,
                 fill: false
             };
         }
