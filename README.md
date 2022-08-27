@@ -1,3 +1,5 @@
+#Automatic way to collect temperature readings on a BeagleBone with a fancy webpage
+
 Install instructions: The python program has several dependencies that need to be installed. Run these commands
 
 #install necessary packages
